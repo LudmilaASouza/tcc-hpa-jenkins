@@ -1,0 +1,7 @@
+ 
+jenkins_home/
+.env
+*.log
+.DS_Store
+monitoring/prometheus-data/
+monitoring/grafana-data/
