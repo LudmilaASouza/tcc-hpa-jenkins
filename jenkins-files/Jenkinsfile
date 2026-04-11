@@ -1,0 +1,31 @@
+pipeline {
+    agent any
+    environment {
+        KUBECONFIG = '/root/.kube/config'
+        NAMESPACE  = 'tcc-jenkins'
+    }
+    stages {
+        stage('Validar Manifests') {
+            steps {
+                sh 'kubectl apply --dry-run=client -f k8s-manifests/ -n ${NAMESPACE}'
+            }
+        }
+        stage('Deploy Workload') {
+            steps {
+                sh 'kubectl apply -f k8s-manifests/deployment.yaml -n ${NAMESPACE}'
+                sh 'kubectl apply -f k8s-manifests/service.yaml -n ${NAMESPACE}'
+            }
+        }
+        stage('Deploy HPA') {
+            steps {
+                sh 'kubectl apply -f k8s-manifests/hpa.yaml -n ${NAMESPACE}'
+            }
+        }
+        stage('Verificar HPA') {
+            steps {
+                sh 'kubectl get hpa -n ${NAMESPACE} -o wide'
+            }
+        }
+    }
+    post { always { sh 'kubectl describe hpa -n ${NAMESPACE}' } }
+}
