@@ -16,12 +16,18 @@ spec:
       containers:
       - name: app
         image: nginx:latest
+        # Comentado para cessar o estresse artificial de CPU após os testes:
+        # command: ["/bin/sh", "-c"]
+        # args: 
+        # - |
+        #   (while true; do head -n 10 /dev/urandom | sha256sum; done) & 
+        #   nginx -g 'daemon off;'
         resources:
           requests:
-            cpu: "10m"
-            memory: "64Mi"
+            cpu: "5m"
+            memory: "32Mi"
           limits:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "50m"
+            memory: "64Mi"
         ports:
         - containerPort: 80
