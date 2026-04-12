@@ -16,12 +16,12 @@ spec:
       containers:
       - name: app
         image: nginx:latest
-        # O segredo está aqui: o comando força carga de CPU e depois inicia o nginx
-        command: ["/bin/sh", "-c"]
-        args: 
-        - |
-          (while true; do head -n 10 /dev/urandom | sha256sum; done) & 
-          nginx -g 'daemon off;'
+        # O bloco abaixo foi comentado após a validação do HPA para cessar o estresse artificial:
+        # command: ["/bin/sh", "-c"]
+        # args: 
+        # - |
+        #   (while true; do head -n 10 /dev/urandom | sha256sum; done) & 
+        #   nginx -g 'daemon off;'
         resources:
           requests:
             cpu: "5m"
