@@ -1,0 +1,108 @@
+Started by user Ludmila Souza
+Obtained jenkins-files/Jenkinsfile from git https://github.com/LudmilaASouza/tcc-hpa-jenkins
+[Pipeline] Start of Pipeline
+[Pipeline] node
+Running on Jenkins in /var/jenkins_home/workspace/TCC-HPA-Pipeline
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+No credentials specified
+ > git rev-parse --resolve-git-dir /var/jenkins_home/workspace/TCC-HPA-Pipeline/.git # timeout=10
+Fetching changes from the remote Git repository
+ > git config remote.origin.url https://github.com/LudmilaASouza/tcc-hpa-jenkins # timeout=10
+Fetching upstream changes from https://github.com/LudmilaASouza/tcc-hpa-jenkins
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git fetch --tags --force --progress -- https://github.com/LudmilaASouza/tcc-hpa-jenkins +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git rev-parse refs/remotes/origin/main^{commit} # timeout=10
+Checking out Revision 6886c442ffdf7dbf157fd2c7eb212267806bc841 (refs/remotes/origin/main)
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f 6886c442ffdf7dbf157fd2c7eb212267806bc841 # timeout=10
+Commit message: "Ajuste: threshold de CPU reduzido para 30% para teste de carga gradual"
+ > git rev-list --no-walk c1775647e3789519322a16b4dcd6a690b0249ae7 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Validar e Deploy)
+[Pipeline] withKubeConfig
+[Pipeline] {
+[Pipeline] sh
++ kubectl apply --dry-run=client -f k8s-manifests/ -n tcc-jenkins
+deployment.apps/app-teste-hpa configured (dry run)
+horizontalpodautoscaler.autoscaling/app-teste-hpa configured (dry run)
+service/app-teste-svc configured (dry run)
+[Pipeline] sh
++ kubectl apply -f k8s-manifests/ -n tcc-jenkins
+deployment.apps/app-teste-hpa unchanged
+horizontalpodautoscaler.autoscaling/app-teste-hpa unchanged
+service/app-teste-svc unchanged
+[Pipeline] sh
++ kubectl rollout status deployment/app-teste-hpa -n tcc-jenkins --timeout=90s
+deployment "app-teste-hpa" successfully rolled out
+[Pipeline] sh
++ kubectl get hpa -n tcc-jenkins
+NAME            REFERENCE                  TARGETS                        MINPODS   MAXPODS   REPLICAS   AGE
+app-teste-hpa   Deployment/app-teste-hpa   cpu: 0%/30%, memory: 11%/70%   2         10        2          22h
+[Pipeline] }
+[kubernetes-cli] kubectl configuration cleaned up
+[Pipeline] // withKubeConfig
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] withKubeConfig
+[Pipeline] {
+[Pipeline] echo
+--- Detalhes Finais do HPA para Auditoria ---
+[Pipeline] sh
++ kubectl describe hpa -n tcc-jenkins
+Name:                                                     app-teste-hpa
+Namespace:                                                tcc-jenkins
+Labels:                                                   <none>
+Annotations:                                              <none>
+CreationTimestamp:                                        Sun, 12 Apr 2026 22:22:40 +0000
+Reference:                                                Deployment/app-teste-hpa
+Metrics:                                                  ( current / target )
+  resource cpu on pods  (as a percentage of request):     0% (0) / 30%
+  resource memory on pods  (as a percentage of request):  11% (3973120) / 70%
+Min replicas:                                             2
+Max replicas:                                             10
+Behavior:
+  Scale Up:
+    Stabilization Window: 0 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Percent  Value: 100  Period: 15 seconds
+  Scale Down:
+    Stabilization Window: 300 seconds
+    Select Policy: Max
+    Policies:
+      - Type: Percent  Value: 50  Period: 60 seconds
+Deployment pods:       2 current / 2 desired
+Conditions:
+  Type            Status  Reason            Message
+  ----            ------  ------            -------
+  AbleToScale     True    ReadyForNewScale  recommended size matches current size
+  ScalingActive   True    ValidMetricFound  the HPA was able to successfully calculate a replica count from memory resource utilization (percentage of request)
+  ScalingLimited  True    TooFewReplicas    the desired replica count is less than the minimum replica count
+Events:           <none>
+[Pipeline] }
+[kubernetes-cli] kubectl configuration cleaned up
+[Pipeline] // withKubeConfig
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
