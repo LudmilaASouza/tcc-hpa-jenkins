@@ -1,31 +1,32 @@
 pipeline {
     agent any
     environment {
-        // Remova a linha do KUBECONFIG antigo, o plugin cuidará disso
         NAMESPACE = 'tcc-jenkins'
     }
     stages {
         stage('Validar e Deploy') {
             steps {
-                // O withKubeConfig deve envolver os comandos que precisam de acesso ao cluster
                 withKubeConfig([credentialsId: 'k8s-config']) {
-                    
+                    // 1. Validação sintática
                     sh 'kubectl apply --dry-run=client -f k8s-manifests/ -n ${NAMESPACE}'
                     
-                    sh 'kubectl apply -f k8s-manifests/deployment.yaml -n ${NAMESPACE}'
-                    sh 'kubectl apply -f k8s-manifests/service.yaml -n ${NAMESPACE}'
+                    // 2. Aplicação da Infra (App + Service + HPA)
+                    sh 'kubectl apply -f k8s-manifests/ -n ${NAMESPACE}'
                     
-                    sh 'kubectl apply -f k8s-manifests/hpa.yaml -n ${NAMESPACE}'
+                    // 3. Aguardar o Deploy estabilizar (Essencial para o teste de carga não falhar)
+                    sh 'kubectl rollout status deployment/app-teste-hpa -n ${NAMESPACE} --timeout=90s'
                     
-                    sh 'kubectl get hpa -n ${NAMESPACE} -o wide'
+                    // 4. Print rápido do status do HPA
+                    sh 'kubectl get hpa -n ${NAMESPACE}'
                 }
             }
         }
     }
     post { 
         always { 
-            // Aqui também precisa da credencial para não dar erro no final!
             withKubeConfig([credentialsId: 'k8s-config']) {
+                // Isso aqui vai gerar um parágrafo lindo para você copiar e colar no TCC!
+                echo "--- Detalhes Finais do HPA para Auditoria ---"
                 sh 'kubectl describe hpa -n ${NAMESPACE}' 
             }
         } 
